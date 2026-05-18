@@ -19,26 +19,29 @@ st.set_page_config(
     layout="centered"
 )
 
+# Refined branding colors to closely match Coventry University's visual identity
 st.markdown("""
 <style>
     .stChatMessage { border-radius: 12px; }
     .hero {
-        background: linear-gradient(135deg, #6c0000 0%, #b5121b 100%);
+        background: linear-gradient(135deg, #0A1C3A 0%, #16305B 100%);
         border-radius: 14px;
         padding: 1.5rem 2rem;
         margin-bottom: 1.5rem;
         text-align: center;
+        border-bottom: 4px solid #EAAA00;
     }
     .hero h1 { color: white; font-size: 2rem; margin: 0; }
     .hero p  { color: rgba(255,255,255,0.85); margin: 0.4rem 0 0; font-size: 0.95rem; }
     .badge {
         display: inline-block;
-        background: rgba(255,255,255,0.2);
-        color: white;
+        background: #EAAA00;
+        color: #0A1C3A;
         border-radius: 50px;
         padding: 0.2rem 0.8rem;
         font-size: 0.78rem;
         margin-top: 0.6rem;
+        font-weight: bold;
     }
 </style>
 
@@ -62,7 +65,7 @@ with st.sidebar:
 
     if default_key:
         api_key = default_key
-        st.success("✅ API key loaded")
+        st.success("✅ Connected to Campus Node")
     else:
         api_key = st.text_input("Gemini API Key", type="password", placeholder="AIza...")
         st.markdown("[Get a FREE key](https://aistudio.google.com/app/apikey)")
@@ -81,7 +84,7 @@ with st.sidebar:
     st.markdown("📧 ukadmissions@coventry.ac.uk")
     st.markdown("📞 +44 (0)24 7765 6565")
 
-    if st.button("🗑️ Clear chat"):
+    if st.button("🗑️ Clear chat history"):
         st.session_state.messages = []
         st.rerun()
 
@@ -143,9 +146,7 @@ def tool_coventry_knowledge_base(query: str) -> str:
     if matched:
         return " | ".join(matched)
     return (
-        "I couldn't find that specific detail in the Coventry handbook. "
-        "Please check the official portal at coventry.ac.uk/student-central/ "
-        "or email ukadmissions@coventry.ac.uk."
+        "No explicit keyword match found in primary handbook data. Rely on system fallback instructions."
     )
 
 # ─────────────────────────────────────────
@@ -160,8 +161,7 @@ Tone Rules:
 - Always mention we are Rated Gold for Student Experience (TEF 2023) when relevant.
 - Guide international students on CAS deposits, accommodation, and the UKVI e-Visa process.
 - Refer to university systems accurately: 'Aula' for learning, 'SOLAR' for records, 'Nova' for attendance.
-- If you don't know an exact policy or deadline, NEVER make it up. Direct them to
-  ukadmissions@coventry.ac.uk or +44 (0)24 7765 6565.
+- If the [COVENTRY DATA CONTEXT] explicitly says no keyword match is found AND you don't know an exact policy or deadline from your training data, NEVER make it up. Direct them to ukadmissions@coventry.ac.uk or +44 (0)24 7765 6565.
 
 Format Rules:
 - Always use markdown with headers, bullet points, and relevant emojis.
@@ -169,8 +169,8 @@ Format Rules:
 - End responses with an encouraging line or offer to help further.
 
 Context Rule:
-You will receive a [COVENTRY DATA CONTEXT] snippet before the user's question.
-Rely heavily on this data to answer accurately."""
+You will receive a [COVENTRY DATA CONTEXT] block containing verified university data facts for the current turn.
+Rely on this data to answer accurately before attempting to extrapolate from general knowledge."""
 
 # ─────────────────────────────────────────
 # Chat state
@@ -192,7 +192,7 @@ if "messages" not in st.session_state:
         }
     ]
 
-# Render chat history
+# Render chat history cleanly
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar="🦅" if msg["role"] == "assistant" else None):
         st.markdown(msg["content"])
@@ -207,42 +207,40 @@ if user_input:
         st.warning("Please enter your Gemini API key in the sidebar.")
         st.stop()
 
-    # Show user message
+    # Append and display clean user query to keep session state UI pristine
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Retrieve relevant facts from knowledge base
+    # Retrieve fresh knowledge base context
     facts = tool_coventry_knowledge_base(user_input)
 
-    # Build Gemini history
-    history = []
-    for m in st.session_state.messages[1:-1]:  # skip welcome message and latest user msg
+    # Reconstruct the historical log for Gemini's API without contaminating past turns
+    contents = []
+    # Skip the welcome introduction message index 0 to save tokens and avoid baseline noise
+    for m in st.session_state.messages[1:-1]:
         role = "user" if m["role"] == "user" else "model"
-        history.append(types.Content(role=role, parts=[types.Part(text=m["content"])]))
+        contents.append(types.Content(role=role, parts=[types.Part(text=m["content"])]))
 
-    # Inject facts into the user message
+    # Package the current user turn with its specific context block safely isolated
     augmented_query = f"[COVENTRY DATA CONTEXT]: {facts}\n\nUser Question: {user_input}"
-
-    contents = history + [
-        types.Content(role="user", parts=[types.Part(text=augmented_query)])
-    ]
+    contents.append(types.Content(role="user", parts=[types.Part(text=augmented_query)]))
 
     with st.chat_message("assistant", avatar="🦅"):
-        with st.spinner("Phoenix is thinking..."):
+        with st.spinner("Phoenix is reviewing campus records..."):
             try:
                 client = genai.Client(api_key=api_key)
                 response = client.models.generate_content(
-                    model="gemini-1.5-flash",
+                    model="gemini-2.5-flash",  # Upgraded to the modern production flash standard
                     contents=contents,
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_PROMPT,
-                        temperature=0.7,
+                        temperature=0.4, # Lowered slightly from 0.7 to enforce higher fidelity to your KB context
                     )
                 )
-                final = response.text
-                st.markdown(final)
-                st.session_state.messages.append({"role": "assistant", "content": final})
+                final_text = response.text
+                st.markdown(final_text)
+                st.session_state.messages.append({"role": "assistant", "content": final_text})
 
             except Exception as e:
-                st.error(f"Sorry, I encountered an error: {e}")
+                st.error(f"Sorry, I encountered an error connecting to the system: {e}")
