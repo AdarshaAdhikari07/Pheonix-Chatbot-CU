@@ -31,3 +31,48 @@ Phoenix is an enterprise-grade B2B SaaS Retrieval-Augmented Generation (RAG) age
 ├── app.py                # Main application engine and state pipeline
 ├── requirements.txt      # Pinned container dependencies
 └── README.md             # Project documentation and B2B architecture brief
+
+## 📈 Business Value & Institutional ROI
+
+
+
+* **Cost Optimization**: Drastically reduces the operational hourly overhead spent on human student ambassador shifts for basic, repetitive FAQ management.
+* **Conversion Optimization**: Captures international lead traffic in real-time across opposing time zones, dropping engagement friction to absolute zero and minimizing applicant drop-offs.
+* **Admissions Relief**: Intercepts high-volume, low-complexity questions regarding application platforms (`Aula`, `SOLAR`, `Nova`) before they hit the ticketing queues of human admissions officers.
+
+---
+
+## 🔒 Security, Compliance & Data Privacy
+
+Universities operate under strict UK data compliance regulations. Phoenix handles governance gracefully:
+
+* **UK GDPR Compliance**: Form structures cleanly isolate user input logs. Student lead capture emails are processed sequentially and are never stored or transmitted to external entities for model-training purposes.
+* **Isolated RAG Scope**: By locking down data retrieval to an internal `ChromaDB` vector framework with a strict low-temperature ceiling, the model is mathematically insulated from reading or referencing unauthorized external websites.
+* **Safeguarding Gating**: The system's underlying fallback layer safely detects sensitive prompts and shifts administrative control to authorized personnel channels via standard support helpdesks.
+
+---
+
+## 🎭 Interactive Evaluation Demo Script
+
+To demonstrate the robust semantic matching capabilities of the underlying RAG system during a live pitch or code review, try using these sample user query types:
+
+| Test Scenario | Sample User Input | Expected Engine Behavior |
+| :--- | :--- | :--- |
+| **The Typo Test** | *"how can i get a viza"* | Correctly ignores the misspelling and prints the embedded CAS and UKVI guide text. |
+| **The Concept Test** | *"where do I look up my classes?"* | Semantically maps the word "classes" to the internal documentation regarding the `Aula` platform. |
+| **The Out-of-Bounds Test** | *"what is the deadline for the chemistry scholarship?"* | Automatically detects a context mismatch and safely paths the user to `ukadmissions@coventry.ac.uk`. |
+
+---
+
+## 🤝 Contributing & Extension Paths
+
+This repository serves as an extensible base framework. Future development milestones include:
+1. Migrating the local in-memory `ChromaDB` layer to an enterprise cloud instance (e.g., Pinecone or permanent AWS hosted storage).
+2. Setting up direct webhook triggers to pipe captured lead data into university CRM systems like Salesforce or Slate.
+3. Adding voice-to-text inference widgets for automated multilingual audio support.
+
+---
+
+## ⚖️ Compliance & Governance Disclaimer
+
+*This application is an independent software demo built as a minimum viable product proof-of-concept for university recruitment evaluation. It is strictly grounded on public-facing curriculum frameworks and operating parameters.*
